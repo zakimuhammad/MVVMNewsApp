@@ -19,3 +19,4 @@ Tech Stack:
 <img src="/resource/4.jpg" width="50%">
 
 ## Demo
+<img src="/resource/video.gif" width="50%">
