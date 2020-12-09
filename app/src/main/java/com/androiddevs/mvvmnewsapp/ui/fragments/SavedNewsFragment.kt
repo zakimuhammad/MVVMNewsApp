@@ -31,7 +31,7 @@ class SavedNewsFragment : Fragment(R.layout.fragment_saved_news) {
             }
 
             findNavController().navigate(
-                R.id.action_breakingNewsFragment_to_articleFragment,
+                R.id.action_savedNewsFragment_to_articleFragment,
                 bundle
             )
         }

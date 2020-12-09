@@ -35,12 +35,36 @@ class NewsViewModel(
         getBreakingNews("us")
     }
 
+
+    fun saveArticle(article: Article) = viewModelScope.launch {
+        newsRepository.upsertArticle(article)
+    }
+
+    fun getSavedNews() = newsRepository.getSavedNews()
+
+    fun deleteArticle(article: Article) = viewModelScope.launch {
+        newsRepository.deleteArticle(article)
+    }
+
     fun getBreakingNews(countryCode: String) = viewModelScope.launch {
         safeBreakingNewsCall(countryCode)
     }
 
-    fun searchNews(searchQuery: String) = viewModelScope.launch {
-        safeSearchNewsCall(searchQuery)
+    private suspend fun safeBreakingNewsCall(countryCode: String) {
+        breakingNews.postValue(Resource.Loading())
+        try {
+            if (hasInternetConnection()) {
+                val response = newsRepository.getBreakingNews(countryCode, breakingNewsPage)
+                breakingNews.postValue(handleBreakingNewsResponse(response))
+            } else {
+                breakingNews.postValue(Resource.Error("No internet connection"))
+            }
+        } catch (t: Throwable) {
+            when (t) {
+                is IOException -> breakingNews.postValue(Resource.Error("Network failure"))
+                else -> breakingNews.postValue(Resource.Error("Conversion error"))
+            }
+        }
     }
 
     private fun handleBreakingNewsResponse(response: Response<NewsResponse>): Resource<NewsResponse> {
@@ -60,6 +84,10 @@ class NewsViewModel(
         return Resource.Error(response.message())
     }
 
+    fun searchNews(searchQuery: String) = viewModelScope.launch {
+        safeSearchNewsCall(searchQuery)
+    }
+
     private fun handleSearchNewsResponse(response: Response<NewsResponse>): Resource<NewsResponse> {
         if (response.isSuccessful) {
             response.body()?.let { resultResponse ->
@@ -77,16 +105,6 @@ class NewsViewModel(
         return Resource.Error(response.message())
     }
 
-    fun saveArticle(article: Article) = viewModelScope.launch {
-        newsRepository.upsertArticle(article)
-    }
-
-    fun getSavedNews() = newsRepository.getSavedNews()
-
-    fun deleteArticle(article: Article) = viewModelScope.launch {
-        newsRepository.deleteArticle(article)
-    }
-
     private suspend fun safeSearchNewsCall(searchQuery: String) {
         searchNews.postValue(Resource.Loading())
         try {
@@ -100,23 +118,6 @@ class NewsViewModel(
             when (t) {
                 is IOException -> searchNews.postValue(Resource.Error("Network failure"))
                 else -> searchNews.postValue(Resource.Error("Conversion error"))
-            }
-        }
-    }
-
-    private suspend fun safeBreakingNewsCall(countryCode: String) {
-        breakingNews.postValue(Resource.Loading())
-        try {
-            if (hasInternetConnection()) {
-                val response = newsRepository.getBreakingNews(countryCode, breakingNewsPage)
-                breakingNews.postValue(handleBreakingNewsResponse(response))
-            } else {
-                breakingNews.postValue(Resource.Error("No internet connection"))
-            }
-        } catch (t: Throwable) {
-            when (t) {
-                is IOException -> breakingNews.postValue(Resource.Error("Network failure"))
-                else -> breakingNews.postValue(Resource.Error("Conversion error"))
             }
         }
     }
